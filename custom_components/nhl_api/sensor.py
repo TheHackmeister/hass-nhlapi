@@ -28,7 +28,7 @@ DEFAULT_NAME = 'NHL Sensor'
 LOGO_URL = 'https://www-league.nhlstatic.com/images/logos/'\
     'teams-current-primary-light/{}.svg'
 
-SCAN_INTERVAL = timedelta(seconds=5)
+SCAN_INTERVAL = timedelta(seconds=60)
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_ID, default=0): cv.positive_int,
@@ -76,7 +76,7 @@ class NHLSensor(Entity):
         """Return the state attributes of the sensor."""
         return self._state_attributes
 
-    def update(self):
+    def update(self, scan_interval):
         """Get the latest data from the NHL API via pynhl."""
         games = Schedule(self.team_id).game_info()
         dates = Schedule(self.team_id).datetime_info()
@@ -107,6 +107,14 @@ class NHLSensor(Entity):
             self._state = next_date_time
         else:
             self._state = plays.get('game_state', next_date_time)
+        # At pre-game, set scan interval to greater of user-defined 
+        # interval or 1 second.
+        if scan_interval > timedelta(seconds=1):
+            live_scan_interval = scan_interval
+        else:
+            live_scan_interval = timedelta(seconds=1)
+        if plays.get('game_state') == "Pre-Game":
+            self._scan_interval = live_scan_interval
         # Set sensor state attributes.
         self._state_attributes = all_attr
         # Set away team logo url as attribute 'away_logo'.
@@ -124,9 +132,10 @@ class NHLSensor(Entity):
         goal_team_id = self._state_attributes.get('goal_team_id', None)
         goal_event_id = self._state_attributes.get('goal_event_id', None)
         goal_event_handler(goal_team_id, goal_event_id, self.hass)
-        # Clear the event list at game end.
+        # Clear the event list at game end and reset to defined scan interval.
         if self._state == "Game Over":
             event_list(0, True)
+            self._scan_interval = scan_interval
 
 
 def event_list(event_id=0, clear=False, lst=[]):
