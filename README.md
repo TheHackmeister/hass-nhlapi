@@ -30,9 +30,9 @@ sensor:
 | platform | true     | string  | `nhl_api`                                                                                                                           |
 | team_id  | true     | integer | Identifies the team to be tracked by the sensor. See [teams.md](https://github.com/JayBlackedOut/hass-nhlapi/blob/master/teams.md). |
 | name     | false    | string  | Friendly name of the sensor. If not defined, defaults to: 'NHL Sensor'.                                                             |
-| scan_interval | false    | integer  | Number of seconds until the sensor updates its state. If not defined, defaults to 5 seconds.                                                             |
+| scan_interval | false    | integer  | Number of seconds until the sensor updates its state while a game is live. If not defined, defaults to every second.                                                             |
 
-Warning! Setting your `scan_interval` to a low number leads to more writes to your disk. It is recommended to not set the scan interval to less than 5 if running Home Assistant on a Raspberry Pi. Also, each time the sensor updates (i.e. at each scan interval), anywhere from ~300B to ~25KB of data is consumed. Keep this in mind if you have a low internet data cap.
+**New!** `scan_interval` now only defines how often the sensor updates its state while a tracked team's game is live. While no game is live, the sensor will only update every 60 seconds. Each time the sensor updates (i.e. at each scan interval), anywhere from ~300B to ~25KB of data is consumed. Keep this in mind if you have a low internet data cap. If running Home Assistant on a Raspberry Pi, it is recommendeded to set the scan interval to 5 or higher to limit the number of writes to the disk.
 
 ## Exposed Information
 The sensor will expose the status of the tracked team's scheduled game for the day. The state can be:
